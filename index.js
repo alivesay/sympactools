@@ -55,6 +55,15 @@ const buildSchemaDefault = (fields) => Object.assign({}, ...fields.map(field => 
 })));
 
 // ROUTES /////////////////////////////////////////////////////////////////////
+app.post('/login', checkSchema(buildSchemaDefault([
+  'code',
+  'pin'
+])), requestValidationHandler, (req, res) => {
+  return ILSWS_patronLogin(req.body.code, req.body.pin)
+  .then(() => res.send({ message: 'authenticated' }))
+  .catch(responseErrorHandler(res));
+});
+
 app.post('/pin_reset', checkSchema(buildSchemaDefault([
   'code'
 ])), requestValidationHandler, (req, res) => {
