@@ -120,8 +120,7 @@ app.post('/register', checkSchema(buildSchemaDefault([
   'email',
   'telephone'
 ])), requestValidationHandler, (req, res) => {
-  const b = req.body; 
-  const patronData = {
+  const b = req.body, patronData = {
     'patron-firstName': b.first_name,
     'patron-middleName': b.middle_name,
     'patron-lastName': b.last_name,
@@ -234,7 +233,7 @@ app.post('/acquire', checkSchema(buildSchemaDefault([
 ])), requestValidationHandler, (req, res) => {
   return ILSWS_patronLogin(req.body.code, req.body.pin)
   .then(loginResponse => loginResponse.data)
-  .then(loginData => res.status(501).send({ error: 'not implemented yet' }))
+  .then(() => res.status(501).send({ error: 'not implemented yet' }))
   .catch(responseErrorHandler(res));
 });
 
