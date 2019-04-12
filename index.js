@@ -127,7 +127,8 @@ app.post('/register', checkSchema(buildSchemaDefault([
   'address2_state',
   'address2_zip',
   'email',
-  'telephone'
+  'telephone',
+  'pin'
 ])), requestValidationHandler, (req, res) => {
   const b = req.body, patronData = {
     'patron-firstName': b.first_name,
