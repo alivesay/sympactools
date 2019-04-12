@@ -1,0 +1,23 @@
+{
+  "SYMPAC_PORT": "3000",
+  "ILSWS_LANGUAGE_ENABLED": true,
+  "ILSWS_LANGUAGE_FIELD": "language",
+  "ILSWS_LANGUAGE_DEFAULT_KEY": "ENGLISH",
+  "ILSWS_PATRON_CATEGORY_DEFAULTS": {
+    "01": {
+      "key": "0_EXAMPLE",
+      "displayName": "Example County"
+    },
+    "02": {
+      "key": "EMAIL",
+      "displayName": "Email"
+    }
+  },
+  "ILSWS_USERNAME": "admin",
+  "ILSWS_PASSWORD": "password",
+  "ILSWS_HOSTNAME": "example.sirsidynix.net",
+  "ILSWS_PORT": 443,
+  "ILSWS_WEBAPP": "example_ilsws",
+  "ILSWS_CLIENTID": "SymWSTestClient",
+  "ILSWS_RESET_PIN_URL": "http://x.com"
+}
