@@ -280,12 +280,14 @@ function ILSWS_patronFetch(token, key) {
 }
 
 function ILSWS_patronResetPin(barcode) {
+  const resetPinToken = require('crypto').randomBytes(32).toString('hex');
+
   return axios({
     method: 'POST',
     url: `${ILSWS_BASE_URI}/user/patron/resetMyPin`,
     data: {
       barcode: barcode,
-      resetPinUrl: config.ILSWS_RESET_PIN_URL
+      resetPinUrl: `${config.ILSWS_RESET_PIN_URL}/?resetPinToken=${resetPinToken}`
     }
   });
 }
