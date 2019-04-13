@@ -298,13 +298,13 @@ function ILSWS_patronUpdate(token, patronData) {
 
 function ILSWS_patronFetch(token, key) {
   const includeFields = [
-        'barcode',
-        'birthDate',
-        'firstName',
-        'middleName',
-        'lastName',
-        'library',
-        'address1'
+    'barcode',
+    'birthDate',
+    'firstName',
+    'middleName',
+    'lastName',
+    'library',
+    'address1'
   ];
 
   for (const cat in config.ILSWS_PATRON_CATEGORY_DEFAULTS) {
