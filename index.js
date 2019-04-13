@@ -54,6 +54,28 @@ const buildSchemaDefault = (fields) => Object.assign({}, ...fields.map(field => 
   [field]: { in: ['body'], exists: true, errorMessage: 'field required' }
 })));
 
+const convertPatronToContact = (data) => {
+  const _ak = (key) => {
+    for (const f of data.fields.address1) {
+      if (f.fields && f.fields.code && f.fields.code.key === key)
+        return f.fields.data;
+    }
+    return '';
+  };
+
+  const [city, state] = _ak('CITY/STATE').split(/,(?=[^,]+$)/);
+
+  return {
+    address1_street: _ak('STREET'),
+    address1_city: city.trim(),
+    address1_state: state.trim(),
+    address1_zip: _ak('ZIP'),
+    email: _ak('EMAIL'),
+    telephone: _ak('PHONE'),
+    location_code: data.fields.library.key
+  };
+};
+
 // ROUTES /////////////////////////////////////////////////////////////////////
 app.post('/login', checkSchema(buildSchemaDefault([
   'code',
@@ -83,6 +105,8 @@ app.post('/modify_contact_info', checkSchema(buildSchemaDefault([
   'telephone',
   'location_code'
 ])), requestValidationHandler, (req, res) => {
+  Object.keys(req.body).forEach(key => !req.body[key] && delete req.body[key]);
+  
   return ILSWS_patronLogin(req.body.code, req.body.pin)
   .then(loginResponse => loginResponse.data)
   .then(loginData => Promise.all([
@@ -91,6 +115,7 @@ app.post('/modify_contact_info', checkSchema(buildSchemaDefault([
   ]))
   .then(([loginData, patronResponse]) => Promise.all([loginData, patronResponse.data]))
   .then(([loginData, patronData]) => {
+    
     patronData.fields.library = {
       resource: '/policy/library',
       key: req.body.location_code.toUpperCase()
@@ -102,7 +127,7 @@ app.post('/modify_contact_info', checkSchema(buildSchemaDefault([
      ['EMAIL', req.body.email],
      ['PHONE', req.body.telephone]].forEach(v => {
        for (const f of patronData.fields.address1) {
-         if (f.fields && f.fields.code && f.fields.code.key === v[0])
+         if (f.fields && f.fields.code && f.fields.code.key === v[0] && v[1])
            f.fields.data = v[1];
        }
     });
@@ -206,28 +231,7 @@ app.get('/contact_info', checkSchema({
   return ILSWS_patronLogin(req.query.code, req.query.pin)
   .then(loginResponse => loginResponse.data)
   .then(loginData => ILSWS_patronFetch(loginData.sessionToken, loginData.patronKey))
-  .then(fetchResponse => fetchResponse.data)
-  .then(fetchData => {
-    const _ak = (key) => {
-      for (const f of fetchData.fields.address1) {
-        if (f.fields && f.fields.code && f.fields.code.key === key)
-          return f.fields.data;
-      }
-      return '';
-    };
-
-    const [city, state] = _ak('CITY/STATE').split(/,(?=[^,]+$)/);
-
-    res.send({
-      address1_street: _ak('STREET'),
-      address1_city: city.trim(),
-      address1_state: state.trim(),
-      address1_zip: _ak('ZIP'),
-      email: _ak('EMAIL'),
-      telephone: _ak('PHONE'),
-      location_code: fetchData.fields.library.key
-    });
-  })
+  .then(fetchResponse => res.send(convertPatronToContact(fetchResponse.data)))
   .catch(responseErrorHandler(res));
 });
 
@@ -332,7 +336,7 @@ function ILSWS_patronResetPin(barcode) {
     }
   });
 }
-
+ 
 // o_O ////////////////////////////////////////////////////////////////////////
 app.listen(config.SYMPAC_PORT, () => {
   console.log(`Listening on ${config.SYMPAC_PORT}`);
