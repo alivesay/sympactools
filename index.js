@@ -29,53 +29,6 @@ axios.defaults.headers.common['x-sirs-clientID'] = config.ILSWS_CLIENTID;
 axios.defaults.headers.common['Accept'] = 'application/json';
 axios.defaults.headers.common['Content-Type'] = 'application/json';
 
-// HELPERS ////////////////////////////////////////////////////////////////////
-const requestValidationHandler = (req, res, next) => {
-  const vErrors = validationResult(req);
-  if (!vErrors.isEmpty()) {
-    return res.status(400).json({
-      error: 'missing required fields: ' + vErrors.array().map(e => e.param).join()
-    });
-  }
-  return next();
-}
-
-const responseErrorHandler = (res) => {
-  return (error) => {
-    if (typeof error.response === 'undefined' || error.response.status !== 401) {
-      return res.status(500).send({ error: 'internal server error' });
-    }
-
-    res.status(401).send({ error: 'login failed' });
-  };
-};
-
-const buildSchemaDefault = (fields) => Object.assign({}, ...fields.map(field => ({
-  [field]: { in: ['body'], exists: true, errorMessage: 'field required' }
-})));
-
-const convertPatronToContact = (data) => {
-  const _ak = (key) => {
-    for (const f of data.fields.address1) {
-      if (f.fields && f.fields.code && f.fields.code.key === key)
-        return f.fields.data;
-    }
-    return '';
-  };
-
-  const [city, state] = _ak('CITY/STATE').split(/,(?=[^,]+$)/);
-
-  return {
-    address1_street: _ak('STREET'),
-    address1_city: city.trim(),
-    address1_state: state.trim(),
-    address1_zip: _ak('ZIP'),
-    email: _ak('EMAIL'),
-    telephone: _ak('PHONE'),
-    location_code: data.fields.library.key
-  };
-};
-
 // ROUTES /////////////////////////////////////////////////////////////////////
 app.post('/login', checkSchema(buildSchemaDefault([
   'code',
@@ -336,7 +289,56 @@ function ILSWS_patronResetPin(barcode) {
     }
   });
 }
- 
+
+// HELPERS ////////////////////////////////////////////////////////////////////
+function requestValidationHandler(req, res, next) {
+  const vErrors = validationResult(req);
+  if (!vErrors.isEmpty()) {
+    return res.status(400).json({
+      error: 'missing required fields: ' + vErrors.array().map(e => e.param).join()
+    });
+  }
+  return next();
+}
+
+function responseErrorHandler(res) {
+  return (error) => {
+    if (typeof error.response === 'undefined' || error.response.status !== 401) {
+      return res.status(500).send({ error: 'internal server error' });
+    }
+
+    res.status(401).send({ error: 'login failed' });
+  };
+}
+
+function buildSchemaDefault(fields) {
+  return Object.assign({}, ...fields.map(field => ({
+    [field]: { in: ['body'], exists: true, errorMessage: 'field required' }
+  })));
+}
+
+function convertPatronToContact(data) {
+  const _ak = (key) => {
+    for (const f of data.fields.address1) {
+      if (f.fields && f.fields.code && f.fields.code.key === key)
+        return f.fields.data;
+    }
+    return '';
+  };
+
+  const [city, state] = _ak('CITY/STATE').split(/,(?=[^,]+$)/);
+
+  return {
+    address1_street: _ak('STREET'),
+    address1_city: city.trim(),
+    address1_state: state.trim(),
+    address1_zip: _ak('ZIP'),
+    email: _ak('EMAIL'),
+    telephone: _ak('PHONE'),
+    location_code: data.fields.library.key
+  };
+}
+
 // o_O ////////////////////////////////////////////////////////////////////////
 app.listen(config.SYMPAC_PORT, () => {
   console.log(`Listening on ${config.SYMPAC_PORT}`);
