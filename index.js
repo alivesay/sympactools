@@ -177,18 +177,6 @@ app.post('/change_pin', checkSchema(buildSchemaDefault([
   .catch(responseErrorHandler(res));
 });
 
-app.post('/change_pin', checkSchema(buildSchemaDefault([
-  'code',
-  'pin',
-  'new_pin'
-])), requestValidationHandler, (req, res) => {
-  return ILSWS_patronLogin(req.body.code, req.body.pin)
-  .then(loginResponse => loginResponse.data)
-  .then(loginData => ILSWS_patronChangeMyPin(loginData.sessionToken, req.body.pin, req.body.new_pin))
-  .then(() => res.send({message: 'pin changed'}))
-  .catch(responseErrorHandler(res));
-});
-
 app.get('/contact_info', checkSchema({
   code: { in: [ 'query' ], exists: true, errorMessage: 'field required' },
   pin: { in: [ 'query' ], exists: true, errorMessage: 'field required' }
