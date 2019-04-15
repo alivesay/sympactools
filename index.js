@@ -172,6 +172,18 @@ app.post('/change_pin', checkSchema(buildSchemaDefault([
 ])), requestValidationHandler, (req, res) => {
   return ILSWS_patronLogin(req.body.code, req.body.pin)
   .then(loginResponse => loginResponse.data)
+  .then(loginData => ILSWS_patronChangeMyPin(loginData.sessionToken, req.body.pin, req.body.new_pin, req.query.callback))
+  .then(() => res.send({message: 'pin changed'}))
+  .catch(responseErrorHandler(res));
+});
+
+app.post('/change_pin', checkSchema(buildSchemaDefault([
+  'code',
+  'pin',
+  'new_pin'
+])), requestValidationHandler, (req, res) => {
+  return ILSWS_patronLogin(req.body.code, req.body.pin)
+  .then(loginResponse => loginResponse.data)
   .then(loginData => ILSWS_patronChangeMyPin(loginData.sessionToken, req.body.pin, req.body.new_pin))
   .then(() => res.send({message: 'pin changed'}))
   .catch(responseErrorHandler(res));
@@ -216,14 +228,14 @@ function ILSWS_patronLogin(barcode, pin) {
   });
 }
 
-function ILSWS_patronChangeMyPin(token, currentPin, newPin) {
+function ILSWS_patronChangeMyPin(token, currentPin, newPin, callback) {
   return axios({
     method: 'POST',
     url: `${ILSWS_BASE_URI}/user/patron/changeMyPin`,
-    data: {
-      currentPin: currentPin,
-      newPin: newPin
-    },
+    data: Object.assign({},
+			{ newPin: newPin },
+                        callback && { resetPinToken: currentPin },
+                        !callback && { currentPin: currentPin }),
     headers: {
        'x-sirs-sessionToken': token
     }
