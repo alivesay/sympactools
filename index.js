@@ -114,12 +114,14 @@ app.post('/register', checkSchema(buildSchemaDefault([
     'patron-lastName': b.last_name,
     'patron-birthDate': b.birthdate,
     'patronAddress1-STREET': b.address1_street,
-    'patronAddress1-CITY/STATE': `${b.address1_city}, ${b.address1_state}`,
+    'patronAddress1-CITY': b.address1_city,
+    'patronAddress1-STATE': b.address1_state,
     'patronAddress1-ZIP': b.address1_zip,
     'patronAddress1-EMAIL': b.email,
     'patronAddress1-PHONE': b.telephone,
     'patronAddress2-STREET': b.address2_street,
-    'patronAddress2-CITY/STATE': `${b.address2_city}, ${b.address2_state}`,
+    'patronAddress2-CITY': b.address2_city,
+    'patronAddress2-STATE':  b.address2_state,
     'patronAddress2-ZIP': b.address2_zip,
     'patron-pin': b.pin,
     'patron-confirmPIN': b.pin
@@ -170,9 +172,8 @@ app.post('/change_pin', checkSchema(buildSchemaDefault([
   'pin',
   'new_pin'
 ])), requestValidationHandler, (req, res) => {
-  return ILSWS_patronLogin(req.body.code, req.body.pin)
-  .then(loginResponse => loginResponse.data)
-  .then(loginData => ILSWS_patronChangeMyPin(loginData.sessionToken, req.body.pin, req.body.new_pin, req.query.callback))
+  return Promise.resolve(req.query.callback ? null : ILSWS_patronLogin(req.body.code, req.body.pin))
+  .then(loginResponse => ILSWS_patronChangeMyPin(loginResponse && loginResponse.data.sessionToken, req.body.pin, req.body.new_pin, req.query.callback))
   .then(() => res.send({message: 'pin changed'}))
   .catch(responseErrorHandler(res));
 });
@@ -217,16 +218,16 @@ function ILSWS_patronLogin(barcode, pin) {
 }
 
 function ILSWS_patronChangeMyPin(token, currentPin, newPin, callback) {
+  const headers = { ...(!callback && { 'x-sirs-sessionToken': token}) };
+
   return axios({
     method: 'POST',
     url: `${ILSWS_BASE_URI}/user/patron/changeMyPin`,
     data: Object.assign({},
-			{ newPin: newPin },
-                        callback && { resetPinToken: currentPin },
-                        !callback && { currentPin: currentPin }),
-    headers: {
-       'x-sirs-sessionToken': token
-    }
+      { newPin: newPin },
+      callback && { resetPinToken: currentPin },
+      !callback && { currentPin: currentPin }),
+    headers: headers
   });
 }
 
@@ -280,14 +281,12 @@ function ILSWS_patronFetch(token, key) {
 }
 
 function ILSWS_patronResetPin(barcode) {
-  const resetPinToken = require('crypto').randomBytes(32).toString('hex');
-
   return axios({
     method: 'POST',
     url: `${ILSWS_BASE_URI}/user/patron/resetMyPin`,
     data: {
       barcode: barcode,
-      resetPinUrl: `${config.ILSWS_RESET_PIN_URL}/?resetPinToken=${resetPinToken}`
+      resetPinUrl: `${config.ILSWS_RESET_PIN_URL}?resetPinToken=<RESET_PIN_TOKEN>`
     }
   });
 }
